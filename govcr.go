@@ -49,7 +49,6 @@ type VCRConfig struct {
 	// LongPlay will compress data on cassettes.
 	LongPlay         bool
 	DisableRecording bool
-	Logging          bool
 	CassettePath     string
 
 	// RemoveTLS will remove TLS from the Response when recording.
@@ -57,10 +56,18 @@ type VCRConfig struct {
 	RemoveTLS bool
 }
 
+// NopLogger returns the logger that will produce no output
+func NopLogger() Logger {
+	logger := log.New(os.Stderr, "", log.LstdFlags)
+	out, _ := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_APPEND, 0600)
+	logger.SetOutput(out)
+	return logger
+}
+
 // NewVCR creates a new VCR and loads a cassette.
 // A RoundTripper can be provided when a custom Transport is needed (for example to provide
 // certificates, etc)
-func NewVCR(cassetteName string, vcrConfig *VCRConfig) *VCRControlPanel {
+func NewVCR(cassetteName string, vcrConfig *VCRConfig) (*VCRControlPanel, error) {
 	if vcrConfig == nil {
 		vcrConfig = &VCRConfig{}
 	}
@@ -68,14 +75,9 @@ func NewVCR(cassetteName string, vcrConfig *VCRConfig) *VCRControlPanel {
 	// set up logging
 	var logger Logger
 	if vcrConfig.Logger == nil {
-		logger = log.New(os.Stderr, "", log.LstdFlags)
+		logger = NopLogger()
 	} else {
 		logger = vcrConfig.Logger
-	}
-
-	if !vcrConfig.Logging {
-		out, _ := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_APPEND, 0600)
-		logger.SetOutput(out)
 	}
 
 	// use a default client if none provided
@@ -92,6 +94,7 @@ func NewVCR(cassetteName string, vcrConfig *VCRConfig) *VCRControlPanel {
 	cassette, err := loadCassette(cassetteName, vcrConfig.CassettePath)
 	if err != nil {
 		logger.Fatal(err)
+		return nil, err
 	}
 	cassette.removeTLS = vcrConfig.RemoveTLS
 
@@ -122,7 +125,7 @@ func NewVCR(cassetteName string, vcrConfig *VCRConfig) *VCRControlPanel {
 	// return
 	return &VCRControlPanel{
 		Client: vcrClient,
-	}
+	}, nil
 }
 
 func newRequest(req *http.Request, logger Logger) (Request, error) {
