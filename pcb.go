@@ -3,6 +3,7 @@ package govcr
 import (
 	"bytes"
 	"net/http"
+	"sort"
 )
 
 // pcb stands for Printed Circuit Board. It is a structure that holds some
@@ -61,15 +62,26 @@ func (pcbr *pcb) trackMatches(cassette *cassette, trackNumber int, request Reque
 
 // headerResembles compares HTTP headers for equivalence.
 func (pcbr *pcb) headerResembles(header1 http.Header, header2 http.Header) bool {
-	for k := range header1 {
-		// TODO: a given header may have several values (and in any order)
-		if GetFirstValue(header1, k) != GetFirstValue(header2, k) {
+	if len(header1) != len(header2) {
+		return false
+	}
+
+	for key := range header1 {
+		if len(header1[key]) != len(header2[key]) {
 			return false
+		}
+
+		sort.Strings(header1[key])
+		sort.Strings(header2[key])
+
+		for i := 0; i < len(header1[key]); i++ {
+			if header1[key][i] != header2[key][i] {
+				return false
+			}
 		}
 	}
 
-	// finally assert the number of headers match
-	return len(header1) == len(header2)
+	return true
 }
 
 // bodyResembles compares HTTP bodies for equivalence.

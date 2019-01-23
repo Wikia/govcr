@@ -253,7 +253,10 @@ func readRequestBody(req *http.Request) ([]byte, error) {
 	bodyData := bodyWriter.Bytes()
 
 	// restore original state of the Body source stream
-	req.Body.Close()
+	err = req.Body.Close()
+	if err != nil {
+		return nil, err
+	}
 	req.Body = toReadCloser(bodyData)
 
 	return bodyData, nil
