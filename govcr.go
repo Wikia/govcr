@@ -17,6 +17,14 @@ type VCRControlPanel struct {
 	Client *http.Client
 }
 
+// Logger implements minimal logging interface used by VCR
+type Logger interface {
+	Println(v ...interface{})
+	Printf(format string, v ...interface{})
+	Fatal(v ...interface{})
+	SetOutput(writer io.Writer)
+}
+
 // Stats returns Stats about the cassette and VCR session.
 func (vcr *VCRControlPanel) Stats() Stats {
 	vcrT := vcr.Client.Transport.(*vcrTransport)
@@ -34,6 +42,9 @@ type VCRConfig struct {
 
 	// Filter to run before a response is returned.
 	ResponseFilters ResponseFilters
+
+	// Logger used by VCR internally
+	Logger Logger
 
 	// LongPlay will compress data on cassettes.
 	LongPlay         bool
@@ -55,7 +66,13 @@ func NewVCR(cassetteName string, vcrConfig *VCRConfig) *VCRControlPanel {
 	}
 
 	// set up logging
-	logger := log.New(os.Stderr, "", log.LstdFlags)
+	var logger Logger
+	if vcrConfig.Logger == nil {
+		logger = log.New(os.Stderr, "", log.LstdFlags)
+	} else {
+		logger = vcrConfig.Logger
+	}
+
 	if !vcrConfig.Logging {
 		out, _ := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_APPEND, 0600)
 		logger.SetOutput(out)
@@ -108,7 +125,7 @@ func NewVCR(cassetteName string, vcrConfig *VCRConfig) *VCRControlPanel {
 	}
 }
 
-func newRequest(req *http.Request, logger *log.Logger) (Request, error) {
+func newRequest(req *http.Request, logger Logger) (Request, error) {
 	bodyData, err := readRequestBody(req)
 	if err != nil {
 		logger.Println(err)

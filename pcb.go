@@ -2,7 +2,6 @@ package govcr
 
 import (
 	"bytes"
-	"log"
 	"net/http"
 )
 
@@ -12,7 +11,7 @@ type pcb struct {
 	Transport        http.RoundTripper
 	RequestFilter    RequestFilter
 	ResponseFilter   ResponseFilter
-	Logger           *log.Logger
+	Logger           Logger
 	DisableRecording bool
 	CassettePath     string
 }
