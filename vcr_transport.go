@@ -38,7 +38,7 @@ func (t *vcrTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	if t.PCB.DisableLiveCalls {
-		t.PCB.Logger.Printf("INFO - Cassette '%s' - Could not match any track. Live calls disabled - cancelling request")
+		t.PCB.Logger.Printf("INFO - Cassette '%s' - Could not match any track. Live calls disabled - cancelling request for %s %s", t.Cassette.Name, req.Method, req.URL.String())
 
 		resp = &http.Response{
 			Status:     "502 Bad Gateway",
