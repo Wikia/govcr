@@ -1,6 +1,8 @@
 package govcr
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -35,14 +37,30 @@ func (t *vcrTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return filteredResp, err
 	}
 
-	t.PCB.Logger.Printf("INFO - Cassette '%s' - Executing request to live server for %s %s\n", t.Cassette.Name, req.Method, req.URL.String())
-	resp, err = t.PCB.Transport.RoundTrip(req)
+	if t.PCB.DisableLiveCalls {
+		t.PCB.Logger.Printf("INFO - Cassette '%s' - Could not match any track. Live calls disabled - cancelling request")
 
-	if !t.PCB.DisableRecording {
-		// the VCR is not in read-only mode so
-		t.PCB.Logger.Printf("INFO - Cassette '%s' - Recording new track for %s %s as %s %s\n", t.Cassette.Name, req.Method, req.URL.String(), copiedReq.Method, copiedReq.URL)
-		if err := recordNewTrackToCassette(t.Cassette, copiedReq, resp, err); err != nil {
-			t.PCB.Logger.Println(err)
+		resp = &http.Response{
+			Status:     "502 Bad Gateway",
+			StatusCode: http.StatusBadGateway,
+			Proto:      "HTTP/1.1",
+			ProtoMajor: 1,
+			ProtoMinor: 1,
+			Request:    req,
+			Header:     http.Header{},
+			Close:      true,
+			Body:       ioutil.NopCloser(bytes.NewBufferString("Could not match any tracks")),
+		}
+	} else {
+		t.PCB.Logger.Printf("INFO - Cassette '%s' - Executing request to live server for %s %s\n", t.Cassette.Name, req.Method, req.URL.String())
+		resp, err = t.PCB.Transport.RoundTrip(req)
+
+		if !t.PCB.DisableRecording {
+			// the VCR is not in read-only mode so
+			t.PCB.Logger.Printf("INFO - Cassette '%s' - Recording new track for %s %s as %s %s\n", t.Cassette.Name, req.Method, req.URL.String(), copiedReq.Method, copiedReq.URL)
+			if err := recordNewTrackToCassette(t.Cassette, copiedReq, resp, err); err != nil {
+				t.PCB.Logger.Println(err)
+			}
 		}
 	}
 

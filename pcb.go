@@ -14,6 +14,7 @@ type pcb struct {
 	ResponseFilter   ResponseFilter
 	Logger           Logger
 	DisableRecording bool
+	DisableLiveCalls bool
 	CassettePath     string
 }
 

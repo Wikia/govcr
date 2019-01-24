@@ -49,6 +49,7 @@ type VCRConfig struct {
 	// LongPlay will compress data on cassettes.
 	LongPlay         bool
 	DisableRecording bool
+	DisableLiveCalls bool
 	CassettePath     string
 
 	// RemoveTLS will remove TLS from the Response when recording.
@@ -102,6 +103,7 @@ func NewVCR(cassetteName string, vcrConfig *VCRConfig) (*VCRControlPanel, error)
 	pcbr := &pcb{
 		// TODO: create appropriate test!
 		DisableRecording: vcrConfig.DisableRecording,
+		DisableLiveCalls: vcrConfig.DisableLiveCalls,
 		Transport:        vcrConfig.Client.Transport,
 		RequestFilter:    vcrConfig.RequestFilters.combined(),
 		ResponseFilter:   vcrConfig.ResponseFilters.combined(),
